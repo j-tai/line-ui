@@ -7,12 +7,14 @@ use unicode_width::UnicodeWidthStr;
 use crate::element::Element;
 use crate::render::RenderChunk;
 
+/// An element that renders a piece of text.
 pub struct Text<'s> {
     value: &'s str,
     width: usize,
 }
 
 impl<'s> Text<'s> {
+    /// Creates a new [`Text`] from the given string.
     pub fn new(value: &'s str) -> Self {
         Text {
             value,

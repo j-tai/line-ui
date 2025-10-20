@@ -6,12 +6,14 @@ use crate::element::Element;
 use crate::render::RenderChunk;
 use crate::style::Style;
 
+/// An element that renders its content with a particular style.
 pub struct Styled<E> {
     style: Style,
     inner: E,
 }
 
 impl<E> Styled<E> {
+    /// Creates a new [`Styled`].
     pub fn new(style: Style, inner: E) -> Self {
         Styled { style, inner }
     }

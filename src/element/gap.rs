@@ -8,6 +8,7 @@ use crate::Style;
 use crate::element::Element;
 use crate::render::RenderChunk;
 
+/// An element that renders a blank space of the specified width.
 #[derive(Debug, Clone, Copy)]
 pub struct Gap(pub usize);
 
