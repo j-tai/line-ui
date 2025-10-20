@@ -92,7 +92,7 @@ mod tests {
 
     #[test]
     fn long() {
-        let element = Gap(18);
+        let element = Gap(GAP.len() + 2);
         let render: Vec<_> = element.render().collect();
         assert_eq!(render, [GAP.into(), "  ".into()]);
     }

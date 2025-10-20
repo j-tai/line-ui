@@ -7,7 +7,7 @@ use std::fmt;
 use termion::color::{AnsiValue, Bg, Fg};
 
 /// A text style, encompassing the color and other style options.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Style {
     /// The foreground color.
     pub foreground: Option<u8>,
@@ -31,6 +31,40 @@ impl Style {
         invert: None,
     };
 
+    /// Bold text.
+    pub const BOLD: Style = Style {
+        bold: Some(true),
+        ..Style::EMPTY
+    };
+
+    /// Italicized text.
+    pub const ITALIC: Style = Style {
+        italic: Some(true),
+        ..Style::EMPTY
+    };
+
+    /// Inverted colors.
+    pub const INVERT: Style = Style {
+        invert: Some(true),
+        ..Style::EMPTY
+    };
+
+    /// Creates a style with only the foreground specified.
+    pub fn fg(value: u8) -> Style {
+        Style {
+            foreground: Some(value),
+            ..Style::EMPTY
+        }
+    }
+
+    /// Creates a style with only the background specified.
+    pub fn bg(value: u8) -> Style {
+        Style {
+            background: Some(value),
+            ..Style::EMPTY
+        }
+    }
+
     /// Merges two styles, with `other` taking precedence.
     pub fn with(self, other: Style) -> Style {
         other.or(self)
@@ -45,6 +79,12 @@ impl Style {
             italic: self.italic.or(other.italic),
             invert: self.invert.or(other.invert),
         }
+    }
+}
+
+impl Default for Style {
+    fn default() -> Self {
+        Self::EMPTY
     }
 }
 

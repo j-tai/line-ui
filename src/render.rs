@@ -29,7 +29,7 @@ impl<'s> RenderChunk<'s> {
         RenderChunk {
             value,
             width: value.width(),
-            style: style,
+            style,
             cursor: cursor.into(),
         }
     }
@@ -49,6 +49,7 @@ pub struct Renderer<W> {
 }
 
 impl<W: Write> Renderer<W> {
+    /// Creates a new [`Renderer`] that writes to the given writer.
     pub fn new(writer: W) -> Self {
         Renderer {
             writer,
@@ -57,11 +58,14 @@ impl<W: Write> Renderer<W> {
         }
     }
 
+    /// Destroys this renderer and returns the original writer.
     pub fn into_inner(self) -> W {
         self.writer
     }
 
-    pub fn start(&mut self) -> io::Result<()> {
+    /// Clears the rendering area. This should be called before
+    /// [`render`](Self::render).
+    pub fn clear(&mut self) -> io::Result<()> {
         // Start by resetting the cursor to the top-left.
         let current_cursor_line = match self.desired_cursor {
             // If there's a desired cursor position, the cursor is there.
@@ -82,6 +86,7 @@ impl<W: Write> Renderer<W> {
         Ok(())
     }
 
+    /// Renders a line.
     pub fn render<E: Element>(&mut self, line: E) -> io::Result<()> {
         // If this isn't the first line, then move to the next line.
         if self.lines_rendered != 0 {
@@ -101,7 +106,9 @@ impl<W: Write> Renderer<W> {
         Ok(())
     }
 
-    pub fn finalize(&mut self) -> io::Result<()> {
+    /// Finishes rendering. This should be called after [`render`](Self::render)
+    /// and before polling inputs.
+    pub fn finish(&mut self) -> io::Result<()> {
         if let Some((line, column)) = self.desired_cursor {
             let up = self.lines_rendered - line - 1;
             if up != 0 {
@@ -118,6 +125,20 @@ impl<W: Write> Renderer<W> {
     }
 }
 
+impl<W> std::ops::Deref for Renderer<W> {
+    type Target = W;
+
+    fn deref(&self) -> &Self::Target {
+        &self.writer
+    }
+}
+
+impl<W> std::ops::DerefMut for Renderer<W> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.writer
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::element::IntoElement;
@@ -128,8 +149,8 @@ mod tests {
     fn empty() {
         let mut out = vec![];
         let mut r = Renderer::new(&mut out);
-        r.start().unwrap();
-        r.finalize().unwrap();
+        r.clear().unwrap();
+        r.finish().unwrap();
         assert_eq!(out, b"\r\x1b[J\x1b[?25l");
     }
 
@@ -137,12 +158,12 @@ mod tests {
     fn empty_reuse() {
         let mut out = vec![];
         let mut r = Renderer::new(&mut out);
-        r.start().unwrap();
-        r.finalize().unwrap();
+        r.clear().unwrap();
+        r.finish().unwrap();
         r.writer.clear();
 
-        r.start().unwrap();
-        r.finalize().unwrap();
+        r.clear().unwrap();
+        r.finish().unwrap();
         assert_eq!(out, b"\r\x1b[J\x1b[?25l");
     }
 
@@ -150,9 +171,9 @@ mod tests {
     fn one_line() {
         let mut out = vec![];
         let mut r = Renderer::new(&mut out);
-        r.start().unwrap();
+        r.clear().unwrap();
         r.render("trans rights".into_element()).unwrap();
-        r.finalize().unwrap();
+        r.finish().unwrap();
         assert_eq!(out, b"\r\x1b[Jtrans rights\x1b[m\x1b[?25l");
     }
 
@@ -160,14 +181,14 @@ mod tests {
     fn one_line_reuse() {
         let mut out = vec![];
         let mut r = Renderer::new(&mut out);
-        r.start().unwrap();
+        r.clear().unwrap();
         r.render("one".into_element()).unwrap();
-        r.finalize().unwrap();
+        r.finish().unwrap();
         r.writer.clear();
 
-        r.start().unwrap();
+        r.clear().unwrap();
         r.render("trans rights".into_element()).unwrap();
-        r.finalize().unwrap();
+        r.finish().unwrap();
         assert_eq!(out, b"\r\x1b[Jtrans rights\x1b[m\x1b[?25l");
     }
 
@@ -175,10 +196,10 @@ mod tests {
     fn two_lines() {
         let mut out = vec![];
         let mut r = Renderer::new(&mut out);
-        r.start().unwrap();
+        r.clear().unwrap();
         r.render("trans rights".into_element()).unwrap();
         r.render("enby rights".into_element()).unwrap();
-        r.finalize().unwrap();
+        r.finish().unwrap();
         assert_eq!(
             out,
             b"\r\x1b[Jtrans rights\x1b[m\n\renby rights\x1b[m\x1b[?25l",
@@ -189,16 +210,16 @@ mod tests {
     fn two_lines_reuse() {
         let mut out = vec![];
         let mut r = Renderer::new(&mut out);
-        r.start().unwrap();
+        r.clear().unwrap();
         r.render("trans rights".into_element()).unwrap();
         r.render("enby rights".into_element()).unwrap();
-        r.finalize().unwrap();
+        r.finish().unwrap();
         r.writer.clear();
 
-        r.start().unwrap();
+        r.clear().unwrap();
         r.render("trans rights".into_element()).unwrap();
         r.render("enby rights".into_element()).unwrap();
-        r.finalize().unwrap();
+        r.finish().unwrap();
         assert_eq!(
             out,
             b"\x1b[1A\r\x1b[Jtrans rights\x1b[m\n\renby rights\x1b[m\x1b[?25l",

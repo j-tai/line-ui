@@ -2,6 +2,8 @@
  * Copyright (c) 2025 Jasmine Tai. All rights reserved.
  */
 
+//! The [`Element`] trait, and various elements.
+
 mod fixed_width;
 mod gap;
 mod impls;
@@ -17,8 +19,11 @@ pub use into::*;
 pub use styled::*;
 pub use text::*;
 
+/// A particular widget that can be rendered to the TUI.
 pub trait Element {
+    /// The width of the element, in columns.
     fn width(&self) -> usize;
 
+    /// Renders the element into a sequence of chunks.
     fn render(&self) -> impl DoubleEndedIterator<Item = RenderChunk<'_>>;
 }

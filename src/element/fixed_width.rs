@@ -9,6 +9,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::element::{Element, Gap};
 use crate::render::RenderChunk;
 
+/// An element that pads or truncates its contents to a constant width.
 #[derive(Debug, Clone)]
 pub struct FixedWidth<E> {
     width: usize,
@@ -16,6 +17,7 @@ pub struct FixedWidth<E> {
 }
 
 impl<E> FixedWidth<E> {
+    /// Creates a new [`FixedWidth`] with the specified width and content.
     pub fn new(width: usize, content: E) -> Self {
         FixedWidth { width, content }
     }
