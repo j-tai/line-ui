@@ -43,7 +43,7 @@ impl<'s> From<&'s str> for RenderChunk<'s> {
 
 /// A struct that outputs lines to a [writer](Write).
 pub struct Renderer<W: Write> {
-    writer: W,
+    pub(crate) writer: W,
     lines_rendered: u16,
     desired_cursor: Option<(u16, u16)>,
 }
@@ -201,5 +201,12 @@ mod tests {
             );
         }
         Ok(())
+    }
+
+    #[test]
+    fn drop() {
+        let mut out = vec![];
+        Renderer::new(&mut out);
+        assert_eq!(out, b"\r\x1b[J\x1b[?25h");
     }
 }
