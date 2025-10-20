@@ -36,7 +36,8 @@ fn main() -> std::io::Result<()> {
         }
     }
 
+    r.clear()?;
     drop(r);
-    println!("Thank you. Your name is {name:?}");
+    println!("Your name is {name:?}");
     Ok(())
 }

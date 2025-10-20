@@ -42,7 +42,7 @@ impl<'s> From<&'s str> for RenderChunk<'s> {
 }
 
 /// A struct that outputs lines to a [writer](Write).
-pub struct Renderer<W> {
+pub struct Renderer<W: Write> {
     writer: W,
     lines_rendered: u16,
     desired_cursor: Option<(u16, u16)>,
@@ -58,15 +58,10 @@ impl<W: Write> Renderer<W> {
         }
     }
 
-    /// Destroys this renderer and returns the original writer.
-    pub fn into_inner(self) -> W {
-        self.writer
-    }
-
-    /// Clears the rendering area. This should be called before
+    /// Resets the cursor position. This should be called before
     /// [`render`](Self::render).
-    pub fn clear(&mut self) -> io::Result<()> {
-        // Start by resetting the cursor to the top-left.
+    pub fn reset(&mut self) -> io::Result<&mut Self> {
+        // Reset the cursor to the top-left.
         let current_cursor_line = match self.desired_cursor {
             // If there's a desired cursor position, the cursor is there.
             Some((line, _)) => line,
@@ -76,18 +71,26 @@ impl<W: Write> Renderer<W> {
         if current_cursor_line != 0 {
             write!(self.writer, "{}", cursor::Up(current_cursor_line))?;
         }
+        write!(self.writer, "\r")?;
 
-        // Now clear everything after the cursor.
-        write!(self.writer, "\r{}", clear::AfterCursor)?;
-
-        // Finally, reset the state.
+        // Reset the renderer's state.
         self.lines_rendered = 0;
         self.desired_cursor = None;
-        Ok(())
+        Ok(self)
+    }
+
+    /// Clears the rendering area, resetting the terminal back to its initial
+    /// state.
+    ///
+    /// Note that this function is automatically called when the [`Renderer`] is
+    /// [dropped](Drop).
+    pub fn clear(&mut self) -> io::Result<()> {
+        self.reset()?;
+        write!(self.writer, "{}{}", clear::AfterCursor, cursor::Show)
     }
 
     /// Renders a line.
-    pub fn render<E: Element>(&mut self, line: E) -> io::Result<()> {
+    pub fn render<E: Element>(&mut self, line: E) -> io::Result<&mut Self> {
         // If this isn't the first line, then move to the next line.
         if self.lines_rendered != 0 {
             write!(self.writer, "\n\r")?;
@@ -103,7 +106,7 @@ impl<W: Write> Renderer<W> {
             column += chunk.width;
         }
         self.lines_rendered += 1;
-        Ok(())
+        Ok(self)
     }
 
     /// Finishes rendering. This should be called after [`render`](Self::render)
@@ -118,6 +121,7 @@ impl<W: Write> Renderer<W> {
             if column != 0 {
                 write!(self.writer, "{}", cursor::Right(column))?;
             }
+            write!(self.writer, "{}", cursor::Show)?;
         } else {
             write!(self.writer, "{}", cursor::Hide)?;
         }
@@ -125,7 +129,7 @@ impl<W: Write> Renderer<W> {
     }
 }
 
-impl<W> std::ops::Deref for Renderer<W> {
+impl<W: Write> std::ops::Deref for Renderer<W> {
     type Target = W;
 
     fn deref(&self) -> &Self::Target {
@@ -133,9 +137,15 @@ impl<W> std::ops::Deref for Renderer<W> {
     }
 }
 
-impl<W> std::ops::DerefMut for Renderer<W> {
+impl<W: Write> std::ops::DerefMut for Renderer<W> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.writer
+    }
+}
+
+impl<W: Write> Drop for Renderer<W> {
+    fn drop(&mut self) {
+        let _ = self.clear();
     }
 }
 
@@ -146,83 +156,50 @@ mod tests {
     use super::*;
 
     #[test]
-    fn empty() {
-        let mut out = vec![];
-        let mut r = Renderer::new(&mut out);
-        r.clear().unwrap();
-        r.finish().unwrap();
-        assert_eq!(out, b"\r\x1b[J\x1b[?25l");
+    fn empty() -> io::Result<()> {
+        let mut r = Renderer::new(vec![]);
+        for _ in 0..3 {
+            r.writer.clear();
+            r.reset()?.finish()?;
+            assert_eq!(r.writer, b"\r\x1b[?25l");
+        }
+        Ok(())
     }
 
     #[test]
-    fn empty_reuse() {
-        let mut out = vec![];
-        let mut r = Renderer::new(&mut out);
-        r.clear().unwrap();
-        r.finish().unwrap();
-        r.writer.clear();
-
-        r.clear().unwrap();
-        r.finish().unwrap();
-        assert_eq!(out, b"\r\x1b[J\x1b[?25l");
+    fn one_line() -> io::Result<()> {
+        let mut r = Renderer::new(vec![]);
+        for _ in 0..3 {
+            r.writer.clear();
+            r.reset()?.render("trans rights".into_element())?.finish()?;
+            assert_eq!(r.writer, b"\rtrans rights\x1b[m\x1b[?25l");
+        }
+        Ok(())
     }
 
     #[test]
-    fn one_line() {
-        let mut out = vec![];
-        let mut r = Renderer::new(&mut out);
-        r.clear().unwrap();
-        r.render("trans rights".into_element()).unwrap();
-        r.finish().unwrap();
-        assert_eq!(out, b"\r\x1b[Jtrans rights\x1b[m\x1b[?25l");
-    }
-
-    #[test]
-    fn one_line_reuse() {
-        let mut out = vec![];
-        let mut r = Renderer::new(&mut out);
-        r.clear().unwrap();
-        r.render("one".into_element()).unwrap();
-        r.finish().unwrap();
-        r.writer.clear();
-
-        r.clear().unwrap();
-        r.render("trans rights".into_element()).unwrap();
-        r.finish().unwrap();
-        assert_eq!(out, b"\r\x1b[Jtrans rights\x1b[m\x1b[?25l");
-    }
-
-    #[test]
-    fn two_lines() {
-        let mut out = vec![];
-        let mut r = Renderer::new(&mut out);
-        r.clear().unwrap();
-        r.render("trans rights".into_element()).unwrap();
-        r.render("enby rights".into_element()).unwrap();
-        r.finish().unwrap();
+    fn two_lines() -> io::Result<()> {
+        let mut r = Renderer::new(vec![]);
+        r.reset()?
+            .render("trans rights".into_element())?
+            .render("enby rights".into_element())?
+            .finish()?;
         assert_eq!(
-            out,
-            b"\r\x1b[Jtrans rights\x1b[m\n\renby rights\x1b[m\x1b[?25l",
+            r.writer,
+            b"\rtrans rights\x1b[m\n\renby rights\x1b[m\x1b[?25l",
         );
-    }
 
-    #[test]
-    fn two_lines_reuse() {
-        let mut out = vec![];
-        let mut r = Renderer::new(&mut out);
-        r.clear().unwrap();
-        r.render("trans rights".into_element()).unwrap();
-        r.render("enby rights".into_element()).unwrap();
-        r.finish().unwrap();
-        r.writer.clear();
-
-        r.clear().unwrap();
-        r.render("trans rights".into_element()).unwrap();
-        r.render("enby rights".into_element()).unwrap();
-        r.finish().unwrap();
-        assert_eq!(
-            out,
-            b"\x1b[1A\r\x1b[Jtrans rights\x1b[m\n\renby rights\x1b[m\x1b[?25l",
-        );
+        for _ in 0..3 {
+            r.writer.clear();
+            r.reset()?
+                .render("trans rights".into_element())?
+                .render("enby rights".into_element())?
+                .finish()?;
+            assert_eq!(
+                r.writer,
+                b"\x1b[1A\rtrans rights\x1b[m\n\renby rights\x1b[m\x1b[?25l",
+            );
+        }
+        Ok(())
     }
 }
