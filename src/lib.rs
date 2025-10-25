@@ -8,6 +8,19 @@ mod style;
 pub use render::Renderer;
 pub use style::*;
 
+#[cfg(feature = "unicode")]
+#[inline]
+fn width(text: &str) -> usize {
+    use unicode_width::UnicodeWidthStr;
+    text.width()
+}
+
+#[cfg(not(feature = "unicode"))]
+#[inline]
+fn width(text: &str) -> usize {
+    text.len()
+}
+
 #[cfg(test)]
 mod tests {
     use std::io;

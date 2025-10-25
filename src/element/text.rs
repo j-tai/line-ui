@@ -2,8 +2,6 @@
  * Copyright (c) 2025 Jasmine Tai. All rights reserved.
  */
 
-use unicode_width::UnicodeWidthStr;
-
 use crate::Style;
 use crate::element::Element;
 use crate::render::RenderChunk;
@@ -19,7 +17,7 @@ impl<'s> Text<'s> {
     pub fn new(value: &'s str) -> Self {
         Text {
             value,
-            width: value.width(),
+            width: crate::width(value),
         }
     }
 }

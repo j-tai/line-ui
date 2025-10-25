@@ -16,7 +16,7 @@ publish version="$(read -p 'New version: ' v; echo $v)":
     @echo {{version}} > {{version_file}}
     sed -i 's/^version = "[^"]*"$/version = "'"$(cat {{version_file}})"'"/' Cargo.toml
     grep '^version =' Cargo.toml
-    cargo test
+    cargo test --no-default-features
     cargo test --all-features
     git add Cargo.*
     git commit -m "Bump version to $(cat {{version_file}})"

@@ -6,7 +6,6 @@ use std::io::{self, Write};
 
 use termion::style::Reset;
 use termion::{clear, cursor};
-use unicode_width::UnicodeWidthStr;
 
 use crate::Style;
 use crate::element::Element;
@@ -35,11 +34,11 @@ impl<'s> RenderChunk<'s> {
     };
 
     pub fn new(value: &'s str, style: Style) -> Self {
-        RenderChunk::with_known_width(value, value.width(), style)
+        RenderChunk::with_known_width(value, crate::width(value), style)
     }
 
     pub(crate) fn with_known_width(value: &'s str, width: usize, style: Style) -> Self {
-        debug_assert_eq!(value.width(), width);
+        debug_assert_eq!(crate::width(value), width);
         RenderChunk {
             value,
             width,

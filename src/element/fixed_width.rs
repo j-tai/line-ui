@@ -4,8 +4,6 @@
 
 use std::collections::VecDeque;
 
-use unicode_width::UnicodeWidthStr;
-
 use crate::element::{Element, Gap};
 use crate::render::RenderChunk;
 
@@ -112,7 +110,7 @@ fn truncate_end<'s>(input: RenderChunk<'s>, target: usize) -> RenderChunk<'s> {
     let mut best_width = 0;
 
     for (index, _) in input.value.char_indices().skip(1) {
-        let width = input.value[..index].width();
+        let width = crate::width(&input.value[..index]);
         if width <= target {
             best_index = index;
             best_width = width;
@@ -130,7 +128,7 @@ fn truncate_start<'s>(input: RenderChunk<'s>, target: usize) -> RenderChunk<'s> 
     let mut best_width = 0;
 
     for (index, _) in input.value.char_indices().rev() {
-        let width = input.value[index..].width();
+        let width = crate::width(&input.value[index..]);
         if width <= target {
             best_index = index;
             best_width = width;
