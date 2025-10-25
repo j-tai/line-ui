@@ -4,6 +4,7 @@
 
 use unicode_width::UnicodeWidthStr;
 
+use crate::Style;
 use crate::element::Element;
 use crate::render::RenderChunk;
 
@@ -35,7 +36,11 @@ impl Element for Text<'_> {
     }
 
     fn render(&self) -> impl DoubleEndedIterator<Item = RenderChunk<'_>> {
-        std::iter::once(RenderChunk::from(self.value))
+        std::iter::once(RenderChunk::with_known_width(
+            self.value,
+            self.width,
+            Style::EMPTY,
+        ))
     }
 }
 
