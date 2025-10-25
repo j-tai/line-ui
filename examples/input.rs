@@ -2,7 +2,7 @@
  * Copyright (c) 2025 Jasmine Tai. All rights reserved.
  */
 
-use line_ui::element::IntoElement;
+use line_ui::element::{Cursor, Gap, IntoElement};
 use line_ui::{Renderer, Style};
 use termion::event::{Event, Key};
 use termion::input::TermRead;
@@ -19,7 +19,9 @@ fn main() -> std::io::Result<()> {
         r.clear()?;
         r.render((
             "Enter your name: ".into_element(),
-            name.fixed_width(20).with_style(Style::INVERT),
+            (name.into_element(), Cursor, Gap(1))
+                .fixed_width(20)
+                .with_style(Style::INVERT),
         ))?;
         r.finish()?;
 

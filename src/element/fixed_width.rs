@@ -2,8 +2,6 @@
  * Copyright (c) 2025 Jasmine Tai. All rights reserved.
  */
 
-use std::cmp::Ordering;
-
 use unicode_width::UnicodeWidthStr;
 
 use crate::element::{Element, Gap};
@@ -36,25 +34,17 @@ impl<E: Element> Element for FixedWidth<E> {
             return result.into_iter();
         }
 
-        'render_loop: for item in self.content.render() {
+        for item in self.content.render() {
             let item_width = item.width;
             let available_width = self.width - accumulated_width;
-            match item_width.cmp(&available_width) {
-                Ordering::Less => {
-                    accumulated_width += item.width;
-                    result.push(item);
-                }
-                Ordering::Equal => {
-                    accumulated_width += item.width;
-                    result.push(item);
-                    break 'render_loop;
-                }
-                Ordering::Greater => {
-                    let truncated_item = truncate_end(&item, available_width);
-                    accumulated_width += truncated_item.width;
-                    result.push(truncated_item);
-                    break 'render_loop;
-                }
+            if item_width > available_width {
+                let truncated_item = truncate_end(item, available_width);
+                accumulated_width += truncated_item.width;
+                result.push(truncated_item);
+                break;
+            } else {
+                accumulated_width += item.width;
+                result.push(item);
             }
         }
 
@@ -66,7 +56,7 @@ impl<E: Element> Element for FixedWidth<E> {
     }
 }
 
-fn truncate_end<'s>(input: &RenderChunk<'s>, target: usize) -> RenderChunk<'s> {
+fn truncate_end<'s>(input: RenderChunk<'s>, target: usize) -> RenderChunk<'s> {
     let mut best_index = 0;
     let mut best_width = 0;
 
@@ -81,12 +71,7 @@ fn truncate_end<'s>(input: &RenderChunk<'s>, target: usize) -> RenderChunk<'s> {
     }
 
     debug_assert!(best_width <= target);
-    RenderChunk {
-        value: &input.value[..best_index],
-        width: best_width,
-        style: input.style,
-        cursor: None,
-    }
+    RenderChunk::with_known_width(&input.value[..best_index], best_width, input.style)
 }
 
 #[cfg(test)]

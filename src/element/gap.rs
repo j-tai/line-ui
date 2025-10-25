@@ -55,12 +55,11 @@ impl<'s> Iterator for GapIter<'s> {
         } else {
             let spaces = self.size.min(GAP.len());
             self.size -= spaces;
-            Some(RenderChunk {
-                value: &GAP[..spaces],
-                width: spaces,
-                style: Style::EMPTY,
-                cursor: None,
-            })
+            Some(RenderChunk::with_known_width(
+                &GAP[..spaces],
+                spaces,
+                Style::EMPTY,
+            ))
         }
     }
 }

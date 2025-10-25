@@ -14,23 +14,37 @@ use crate::element::Element;
 /// A chunk of text with a constant style to be rendered.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RenderChunk<'s> {
+    /// The content of this chunk.
     pub(crate) value: &'s str,
+    /// The width of this chunk.
     pub(crate) width: usize,
+    /// The style of this chunk.
     pub(crate) style: Style,
-    pub(crate) cursor: Option<usize>,
+    /// Whether to display the cursor at the start of this chunk. If this is
+    /// true, then `value` must be `""`, `width` must be `0`, and `style` must
+    /// be `Style::EMPTY`.
+    pub(crate) cursor: bool,
 }
 
 impl<'s> RenderChunk<'s> {
+    pub const CURSOR: RenderChunk<'static> = RenderChunk {
+        value: "",
+        width: 0,
+        style: Style::EMPTY,
+        cursor: true,
+    };
+
     pub fn new(value: &'s str, style: Style) -> Self {
-        RenderChunk::with_cursor(value, style, None)
+        RenderChunk::with_known_width(value, value.width(), style)
     }
 
-    pub fn with_cursor(value: &'s str, style: Style, cursor: impl Into<Option<usize>>) -> Self {
+    pub(crate) fn with_known_width(value: &'s str, width: usize, style: Style) -> Self {
+        debug_assert_eq!(value.width(), width);
         RenderChunk {
             value,
-            width: value.width(),
+            width,
             style,
-            cursor: cursor.into(),
+            cursor: false,
         }
     }
 }
@@ -98,12 +112,14 @@ impl<W: Write> Renderer<W> {
         // Render each chunk.
         let mut column = 0;
         for chunk in line.render() {
-            write!(self.writer, "{}{}{Reset}", chunk.style, chunk.value)?;
-
-            if let Some(cursor) = chunk.cursor {
-                self.desired_cursor = Some((self.lines_rendered, (column + cursor) as u16));
+            if chunk.cursor {
+                debug_assert_eq!(chunk.value, "");
+                debug_assert_eq!(chunk.width, 0);
+                self.desired_cursor = Some((self.lines_rendered, column as u16));
+            } else {
+                write!(self.writer, "{}{}{Reset}", chunk.style, chunk.value)?;
+                column += chunk.width;
             }
-            column += chunk.width;
         }
         self.lines_rendered += 1;
         Ok(self)
@@ -129,20 +145,6 @@ impl<W: Write> Renderer<W> {
     }
 }
 
-impl<W: Write> std::ops::Deref for Renderer<W> {
-    type Target = W;
-
-    fn deref(&self) -> &Self::Target {
-        &self.writer
-    }
-}
-
-impl<W: Write> std::ops::DerefMut for Renderer<W> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.writer
-    }
-}
-
 impl<W: Write> Drop for Renderer<W> {
     fn drop(&mut self) {
         let _ = self.clear();
@@ -151,7 +153,7 @@ impl<W: Write> Drop for Renderer<W> {
 
 #[cfg(test)]
 mod tests {
-    use crate::element::IntoElement;
+    use crate::element::{Cursor, IntoElement};
 
     use super::*;
 
@@ -208,5 +210,47 @@ mod tests {
         let mut out = vec![];
         Renderer::new(&mut out);
         assert_eq!(out, b"\r\x1b[J\x1b[?25h");
+    }
+
+    #[test]
+    fn cursor_at_start_of_last_line() -> io::Result<()> {
+        let mut r = Renderer::new(vec![]);
+        r.reset()?
+            .render("trans rights".into_element())?
+            .render((Cursor, "enby rights".into_element()))?
+            .finish()?;
+        assert_eq!(
+            r.writer,
+            b"\rtrans rights\x1b[m\n\renby rights\x1b[m\r\x1b[?25h",
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn cursor_in_last_line() -> io::Result<()> {
+        let mut r = Renderer::new(vec![]);
+        r.reset()?
+            .render("trans rights".into_element())?
+            .render(("enby ".into_element(), Cursor, "rights".into_element()))?
+            .finish()?;
+        assert_eq!(
+            r.writer,
+            b"\rtrans rights\x1b[m\n\renby \x1b[mrights\x1b[m\r\x1b[5C\x1b[?25h",
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn cursor_in_previous_line() -> io::Result<()> {
+        let mut r = Renderer::new(vec![]);
+        r.reset()?
+            .render(("trans rights".into_element(), Cursor))?
+            .render("enby rights".into_element())?
+            .finish()?;
+        assert_eq!(
+            r.writer,
+            b"\rtrans rights\x1b[m\n\renby rights\x1b[m\x1b[1A\r\x1b[12C\x1b[?25h",
+        );
+        Ok(())
     }
 }

@@ -4,6 +4,7 @@
 
 //! The [`Element`] trait, and various elements.
 
+mod cursor;
 mod fixed_width;
 mod gap;
 mod impls;
@@ -13,6 +14,7 @@ mod text;
 
 use crate::render::RenderChunk;
 
+pub use cursor::*;
 pub use fixed_width::*;
 pub use gap::*;
 pub use into::*;
