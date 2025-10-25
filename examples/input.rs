@@ -2,7 +2,7 @@
  * Copyright (c) 2025 Jasmine Tai. All rights reserved.
  */
 
-use line_ui::element::{Cursor, Gap, IntoElement};
+use line_ui::element::{Cursor, Direction, Gap, IntoElement};
 use line_ui::{Renderer, Style};
 use termion::event::{Event, Key};
 use termion::input::TermRead;
@@ -21,7 +21,8 @@ fn main() -> std::io::Result<()> {
             "Enter your name: ".into_element(),
             (name.into_element(), Cursor, Gap(1))
                 .fixed_width(20)
-                .with_style(Style::INVERT),
+                .truncated(Direction::Left)
+                .with_style(Style::bg(240)),
         ))?;
         r.finish()?;
 
