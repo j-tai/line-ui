@@ -9,6 +9,7 @@ use termion::color::{AnsiValue, Bg, Fg};
 
 /// A text style, encompassing the color and other style options.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Style {
     /// The foreground color.
     pub foreground: Option<u8>,

@@ -12,5 +12,9 @@ keywords = ["curses", "tui", "terminal"]
 categories = ["command-line-interface"]
 
 [dependencies]
+serde = { version = "1.0.228", features = ["derive"], optional = true }
 termion = "4.0.5"
 unicode-width = "0.2.1"
+
+[features]
+serde = ["dep:serde"]
