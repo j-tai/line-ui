@@ -1,7 +1,15 @@
 [package]
 name = "line-ui"
 version = "0.1.0"
+authors = ["Jasmine Tai <jtai@jtai.ca>"]
 edition = "2024"
+description = "Line-based UI with termion"
+documentation = "https://docs.rs/line-ui/latest/line_ui/"
+readme = "README.md"
+repository = "https://github.com/j-tai/line-ui"
+license = "MIT"
+keywords = ["curses", "tui", "terminal"]
+categories = ["command-line-interface"]
 
 [dependencies]
 termion = "4.0.5"
