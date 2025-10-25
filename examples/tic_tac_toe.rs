@@ -93,7 +93,8 @@ fn main() -> io::Result<()> {
         }
 
         // Check if someone won
-        match game.check_win() {
+        let result = game.check_win();
+        match result {
             Some(Some(winner)) => {
                 r.render((
                     "The winner is ".into_element(),
@@ -108,13 +109,16 @@ fn main() -> io::Result<()> {
         }
 
         r.finish()?;
+        if result.is_some() {
+            r.leave()?;
+            break;
+        }
 
         // Poll an input
         let Some(event) = events.next() else {
             break;
         };
         match event? {
-            _ if game.check_win().is_some() => break,
             Event::Key(Key::Up) => row = row.checked_sub(1).unwrap_or(2),
             Event::Key(Key::Down) => row = (row + 1) % 3,
             Event::Key(Key::Left) => col = col.checked_sub(1).unwrap_or(2),

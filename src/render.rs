@@ -72,6 +72,12 @@ impl<W: Write> Renderer<W> {
         }
     }
 
+    /// Resets the renderer's state.
+    fn reset_state(&mut self) {
+        self.lines_rendered = 0;
+        self.desired_cursor = None;
+    }
+
     /// Resets the cursor position, allowing rendering to start over.
     pub fn reset(&mut self) -> io::Result<&mut Self> {
         // Reset the cursor to the top-left.
@@ -86,9 +92,7 @@ impl<W: Write> Renderer<W> {
         }
         write!(self.writer, "\r")?;
 
-        // Reset the renderer's state.
-        self.lines_rendered = 0;
-        self.desired_cursor = None;
+        self.reset_state();
         Ok(self)
     }
 
@@ -141,6 +145,27 @@ impl<W: Write> Renderer<W> {
             write!(self.writer, "{}", cursor::Hide)?;
         }
         self.writer.flush()
+    }
+
+    /// Leaves the currently-rendered text, making it impossible to clear.
+    ///
+    /// This method may be used if you want to dispose of this `Renderer`
+    /// without clearing the currently-rendered text. This should be called
+    /// after [`finish`](Self::finish).
+    pub fn leave(&mut self) -> io::Result<()> {
+        if self.lines_rendered == 0 {
+            return Ok(());
+        }
+        let down = match self.desired_cursor {
+            Some((row, _)) => self.lines_rendered - row - 1,
+            None => 0,
+        };
+        if down != 0 {
+            write!(self.writer, "{}", cursor::Down(down))?;
+        }
+        write!(self.writer, "\n\r")?;
+        self.reset_state();
+        Ok(())
     }
 }
 
