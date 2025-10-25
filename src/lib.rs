@@ -28,7 +28,7 @@ mod tests {
             .finish()?;
         assert_eq!(
             r.writer,
-            b"\rone\x1b[m\x1b[38;5;4m\x1b[48;5;5mtwo\x1b[mthree\x1b[m\x1b[?25l",
+            b"\rone\x1b[m\x1b[38;5;4m\x1b[48;5;5mtwo\x1b[mthree\x1b[m\x1b[K\x1b[?25l",
         );
         Ok(())
     }
@@ -45,7 +45,7 @@ mod tests {
             .finish()?;
         assert_eq!(
             r.writer,
-            b"\r\x1b[38;5;42m\x1b[48;5;43mtest\x1b[m\x1b[38;5;42m\x1b[48;5;43m      \x1b[m\x1b[?25l",
+            b"\r\x1b[38;5;42m\x1b[48;5;43mtest\x1b[m\x1b[38;5;42m\x1b[48;5;43m      \x1b[m\x1b[K\x1b[?25l",
         );
         Ok(())
     }

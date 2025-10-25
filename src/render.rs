@@ -72,8 +72,7 @@ impl<W: Write> Renderer<W> {
         }
     }
 
-    /// Resets the cursor position. This should be called before
-    /// [`render`](Self::render).
+    /// Resets the cursor position, allowing rendering to start over.
     pub fn reset(&mut self) -> io::Result<&mut Self> {
         // Reset the cursor to the top-left.
         let current_cursor_line = match self.desired_cursor {
@@ -93,10 +92,9 @@ impl<W: Write> Renderer<W> {
         Ok(self)
     }
 
-    /// Clears the rendering area, resetting the terminal back to its initial
-    /// state.
+    /// Clears the UI, resetting the terminal back to its initial state.
     ///
-    /// Note that this function is automatically called when the [`Renderer`] is
+    /// Note that this method is automatically called when the `Renderer` is
     /// [dropped](Drop).
     pub fn clear(&mut self) -> io::Result<()> {
         self.reset()?;
@@ -121,6 +119,7 @@ impl<W: Write> Renderer<W> {
                 column += chunk.width;
             }
         }
+        write!(self.writer, "{}", clear::UntilNewline)?;
         self.lines_rendered += 1;
         Ok(self)
     }
@@ -169,12 +168,23 @@ mod tests {
     }
 
     #[test]
+    fn empty_line() -> io::Result<()> {
+        let mut r = Renderer::new(vec![]);
+        for _ in 0..3 {
+            r.writer.clear();
+            r.reset()?.render(())?.finish()?;
+            assert_eq!(r.writer, b"\r\x1b[K\x1b[?25l");
+        }
+        Ok(())
+    }
+
+    #[test]
     fn one_line() -> io::Result<()> {
         let mut r = Renderer::new(vec![]);
         for _ in 0..3 {
             r.writer.clear();
             r.reset()?.render("trans rights".into_element())?.finish()?;
-            assert_eq!(r.writer, b"\rtrans rights\x1b[m\x1b[?25l");
+            assert_eq!(r.writer, b"\rtrans rights\x1b[m\x1b[K\x1b[?25l");
         }
         Ok(())
     }
@@ -188,7 +198,7 @@ mod tests {
             .finish()?;
         assert_eq!(
             r.writer,
-            b"\rtrans rights\x1b[m\n\renby rights\x1b[m\x1b[?25l",
+            b"\rtrans rights\x1b[m\x1b[K\n\renby rights\x1b[m\x1b[K\x1b[?25l",
         );
 
         for _ in 0..3 {
@@ -199,7 +209,7 @@ mod tests {
                 .finish()?;
             assert_eq!(
                 r.writer,
-                b"\x1b[1A\rtrans rights\x1b[m\n\renby rights\x1b[m\x1b[?25l",
+                b"\x1b[1A\rtrans rights\x1b[m\x1b[K\n\renby rights\x1b[m\x1b[K\x1b[?25l",
             );
         }
         Ok(())
@@ -221,7 +231,7 @@ mod tests {
             .finish()?;
         assert_eq!(
             r.writer,
-            b"\rtrans rights\x1b[m\n\renby rights\x1b[m\r\x1b[?25h",
+            b"\rtrans rights\x1b[m\x1b[K\n\renby rights\x1b[m\x1b[K\r\x1b[?25h",
         );
         Ok(())
     }
@@ -235,7 +245,7 @@ mod tests {
             .finish()?;
         assert_eq!(
             r.writer,
-            b"\rtrans rights\x1b[m\n\renby \x1b[mrights\x1b[m\r\x1b[5C\x1b[?25h",
+            b"\rtrans rights\x1b[m\x1b[K\n\renby \x1b[mrights\x1b[m\x1b[K\r\x1b[5C\x1b[?25h",
         );
         Ok(())
     }
@@ -249,7 +259,7 @@ mod tests {
             .finish()?;
         assert_eq!(
             r.writer,
-            b"\rtrans rights\x1b[m\n\renby rights\x1b[m\x1b[1A\r\x1b[12C\x1b[?25h",
+            b"\rtrans rights\x1b[m\x1b[K\n\renby rights\x1b[m\x1b[K\x1b[1A\r\x1b[12C\x1b[?25h",
         );
         Ok(())
     }
