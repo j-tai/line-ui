@@ -60,6 +60,7 @@ pub struct Renderer<W: Write> {
     pub(crate) writer: W,
     lines_rendered: u16,
     desired_cursor: Option<(u16, u16)>,
+    is_dirty: bool, // flag for debugging
 }
 
 impl<W: Write> Renderer<W> {
@@ -69,6 +70,7 @@ impl<W: Write> Renderer<W> {
             writer,
             lines_rendered: 0,
             desired_cursor: None,
+            is_dirty: false,
         }
     }
 
@@ -76,10 +78,12 @@ impl<W: Write> Renderer<W> {
     fn reset_state(&mut self) {
         self.lines_rendered = 0;
         self.desired_cursor = None;
+        self.is_dirty = false;
     }
 
     /// Resets the cursor position, allowing rendering to start over.
     pub fn reset(&mut self) -> io::Result<&mut Self> {
+        assert!(!self.is_dirty, "finalize() must be called after rendering");
         // Reset the cursor to the top-left.
         let current_cursor_line = match self.desired_cursor {
             // If there's a desired cursor position, the cursor is there.
@@ -101,12 +105,14 @@ impl<W: Write> Renderer<W> {
     /// Note that this method is automatically called when the `Renderer` is
     /// [dropped](Drop).
     pub fn clear(&mut self) -> io::Result<()> {
+        assert!(!self.is_dirty, "finalize() must be called after rendering");
         self.reset()?;
         write!(self.writer, "{}{}", clear::AfterCursor, cursor::Show)
     }
 
     /// Renders a line.
     pub fn render<E: Element>(&mut self, line: E) -> io::Result<&mut Self> {
+        self.is_dirty = true;
         // If this isn't the first line, then move to the next line.
         if self.lines_rendered != 0 {
             write!(self.writer, "\n\r")?;
@@ -128,9 +134,10 @@ impl<W: Write> Renderer<W> {
         Ok(self)
     }
 
-    /// Finishes rendering. This should be called after [`render`](Self::render)
-    /// and before polling inputs.
+    /// Finishes rendering. This should be called immediately after the
+    /// [`render`](Self::render) calls are complete.
     pub fn finish(&mut self) -> io::Result<()> {
+        self.is_dirty = false;
         if let Some((line, column)) = self.desired_cursor {
             let up = self.lines_rendered - line - 1;
             if up != 0 {
@@ -153,6 +160,7 @@ impl<W: Write> Renderer<W> {
     /// without clearing the currently-rendered text. This should be called
     /// after [`finish`](Self::finish).
     pub fn leave(&mut self) -> io::Result<()> {
+        assert!(!self.is_dirty, "finalize() must be called after rendering");
         if self.lines_rendered == 0 {
             return Ok(());
         }
