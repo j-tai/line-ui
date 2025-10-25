@@ -1,6 +1,6 @@
 # line-ui
 
-Line-based TUI library.
+Line-based TUI library, using `termion`.
 
 ## Example
 
@@ -27,3 +27,7 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 ```
+
+## License
+
+MIT
