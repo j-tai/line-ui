@@ -5,7 +5,7 @@
 use crate::element::Element;
 use crate::render::RenderChunk;
 
-impl<E: Element> Element for &'_ E {
+impl<E: Element + ?Sized> Element for &'_ E {
     fn width(&self) -> usize {
         (*self).width()
     }
@@ -88,3 +88,21 @@ impl_element_for_tuple!(A B C D E F G, 0 1 2 3 4 5 6);
 impl_element_for_tuple!(A B C D E F G H, 0 1 2 3 4 5 6 7);
 impl_element_for_tuple!(A B C D E F G H I, 0 1 2 3 4 5 6 7 8);
 impl_element_for_tuple!(A B C D E F G H I J, 0 1 2 3 4 5 6 7 8 9);
+
+#[cfg(test)]
+mod tests {
+    use crate::element::Gap;
+
+    use super::*;
+
+    fn is_element<E: Element + ?Sized>() {}
+
+    #[test]
+    fn element_impls() {
+        is_element::<[Gap]>();
+        is_element::<&[Gap]>();
+        is_element::<[Gap; 42]>();
+        is_element::<[&[Gap]; 4]>();
+        is_element::<((), (), (), (), (), (), (), Gap, (), ())>();
+    }
+}
