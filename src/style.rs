@@ -3,7 +3,7 @@
  */
 
 use std::fmt;
-use std::ops::Add;
+use std::ops::{Add, AddAssign};
 
 use termion::color::{AnsiValue, Bg, Fg};
 
@@ -95,6 +95,12 @@ impl Add for Style {
 
     fn add(self, rhs: Self) -> Self::Output {
         self.with(rhs)
+    }
+}
+
+impl AddAssign for Style {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
     }
 }
 
