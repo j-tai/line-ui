@@ -9,14 +9,15 @@ use crate::render::RenderChunk;
 
 /// An element that pads or truncates its contents to a constant width.
 #[derive(Debug, Clone)]
-pub struct FixedWidth<E> {
+pub struct FixedWidth<E, T = ()> {
     width: usize,
     truncate: Direction,
     pad: Direction,
     content: E,
+    truncation: T,
 }
 
-impl<E> FixedWidth<E> {
+impl<E: Element> FixedWidth<E, ()> {
     /// Creates a new [`FixedWidth`] with the specified width and content.
     pub fn new(width: usize, content: E) -> Self {
         FixedWidth {
@@ -24,9 +25,12 @@ impl<E> FixedWidth<E> {
             truncate: Direction::Right,
             pad: Direction::Right,
             content,
+            truncation: (),
         }
     }
+}
 
+impl<E: Element, T: Element> FixedWidth<E, T> {
     /// Changes the side on which the content is truncated.
     ///
     /// This option only takes effect if the content is wider than the width.
@@ -43,13 +47,36 @@ impl<E> FixedWidth<E> {
         self
     }
 
+    /// Changes the element displayed when truncation occurs.
+    ///
+    /// This option only takes effect if the content is wider than the width.
+    /// When this happens, this element is displayed on the side that is
+    /// truncated. This element's width must not exceed the width of the
+    /// `FixedWidth`.
+    pub fn truncated_with<U: Element>(self, truncation: U) -> FixedWidth<E, U> {
+        FixedWidth {
+            width: self.width,
+            truncate: self.truncate,
+            pad: self.pad,
+            content: self.content,
+            truncation,
+        }
+    }
+
     fn render_impl<'s>(
         &'s self,
         content: impl DoubleEndedIterator<Item = RenderChunk<'s>>,
         truncate: impl for<'t> Fn(RenderChunk<'t>, usize) -> RenderChunk<'t>,
     ) -> (Vec<RenderChunk<'s>>, Gap) {
-        let mut accumulated_width = 0;
+        let full_content_width = self.content.width();
+        if full_content_width <= self.width {
+            // Entire content fits.
+            return (content.collect(), Gap(self.width - full_content_width));
+        }
+
+        // Truncation is required.
         let mut result = Vec::new();
+        let mut accumulated_width = self.truncation.width();
 
         for item in content {
             let item_width = item.width;
@@ -67,11 +94,14 @@ impl<E> FixedWidth<E> {
             }
         }
 
+        for item in self.truncation.render() {
+            result.push(item);
+        }
         (result, Gap(self.width - accumulated_width))
     }
 }
 
-impl<E: Element> Element for FixedWidth<E> {
+impl<E: Element, T: Element> Element for FixedWidth<E, T> {
     fn width(&self) -> usize {
         self.width
     }
@@ -248,5 +278,38 @@ mod tests {
         let element = "foo".fixed_width(6).padded(Direction::Left);
         let render: Vec<_> = element.render().collect();
         assert_eq!(render, ["   ", "foo"].map(RenderChunk::from));
+    }
+
+    #[test]
+    fn short_content_with_truncation() {
+        let element = "foo".fixed_width(6).truncated_with("$".into_element());
+        let render: Vec<_> = element.render().collect();
+        assert_eq!(render, ["foo", "   "].map(RenderChunk::from));
+    }
+
+    #[test]
+    fn equal_content_with_truncation() {
+        let element = "foobar".fixed_width(6).truncated_with("$".into_element());
+        let render: Vec<_> = element.render().collect();
+        assert_eq!(render, ["foobar"].map(RenderChunk::from));
+    }
+
+    #[test]
+    fn long_content_with_truncation() {
+        let element = "foobarbaz"
+            .fixed_width(6)
+            .truncated_with("$".into_element());
+        let render: Vec<_> = element.render().collect();
+        assert_eq!(render, ["fooba", "$"].map(RenderChunk::from));
+    }
+
+    #[test]
+    fn long_content_with_truncation_on_left() {
+        let element = "foobarbaz"
+            .fixed_width(6)
+            .truncated(Direction::Left)
+            .truncated_with("$".into_element());
+        let render: Vec<_> = element.render().collect();
+        assert_eq!(render, ["$", "arbaz"].map(RenderChunk::from));
     }
 }
