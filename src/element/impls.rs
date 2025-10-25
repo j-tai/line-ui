@@ -25,6 +25,29 @@ impl<E: Element> Element for [E] {
     }
 }
 
+impl<E: Element, const N: usize> Element for [E; N] {
+    fn width(&self) -> usize {
+        self.iter().map(|e| e.width()).sum()
+    }
+
+    fn render(&self) -> impl DoubleEndedIterator<Item = RenderChunk<'_>> {
+        self.iter().flat_map(|e| e.render())
+    }
+}
+
+impl<E: Element> Element for Option<E> {
+    fn width(&self) -> usize {
+        match self {
+            Some(inner) => inner.width(),
+            None => 0,
+        }
+    }
+
+    fn render(&self) -> impl DoubleEndedIterator<Item = RenderChunk<'_>> {
+        self.iter().flat_map(|e| e.render())
+    }
+}
+
 impl Element for () {
     fn width(&self) -> usize {
         0

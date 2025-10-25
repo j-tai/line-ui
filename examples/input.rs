@@ -2,6 +2,8 @@
  * Copyright (c) 2025 Jasmine Tai. All rights reserved.
  */
 
+//! A fixed-width text field.
+
 use line_ui::element::{Cursor, Direction, Gap, IntoElement};
 use line_ui::{Renderer, Style};
 use termion::event::{Event, Key};
@@ -16,15 +18,15 @@ fn main() -> std::io::Result<()> {
 
     let mut events = std::io::stdin().events();
     loop {
-        r.clear()?;
-        r.render((
-            "Enter your name: ".into_element(),
-            (name.into_element(), Cursor, Gap(1))
-                .fixed_width(20)
-                .truncated(Direction::Left)
-                .with_style(Style::bg(240)),
-        ))?;
-        r.finish()?;
+        r.reset()?
+            .render((
+                "Enter your name: ".into_element(),
+                (name.into_element(), Cursor, Gap(1))
+                    .fixed_width(20)
+                    .truncated(Direction::Left)
+                    .with_style(Style::bg(240)),
+            ))?
+            .finish()?;
 
         let Some(event) = events.next().transpose()? else {
             break;

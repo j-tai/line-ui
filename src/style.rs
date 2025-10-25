@@ -3,6 +3,7 @@
  */
 
 use std::fmt;
+use std::ops::Add;
 
 use termion::color::{AnsiValue, Bg, Fg};
 
@@ -85,6 +86,14 @@ impl Style {
 impl Default for Style {
     fn default() -> Self {
         Self::EMPTY
+    }
+}
+
+impl Add for Style {
+    type Output = Style;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        self.with(rhs)
     }
 }
 
