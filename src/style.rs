@@ -167,6 +167,11 @@ mod tests {
     }
 
     #[test]
+    fn plus() {
+        assert_eq!(STYLE_1.with(STYLE_2), STYLE_1 + STYLE_2);
+    }
+
+    #[test]
     fn print_empty() {
         let mut output = vec![];
         write!(&mut output, "{}", Style::EMPTY).unwrap();

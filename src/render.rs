@@ -296,4 +296,42 @@ mod tests {
         );
         Ok(())
     }
+
+    #[test]
+    fn leave_empty() -> io::Result<()> {
+        let mut r = Renderer::new(vec![]);
+        r.reset()?.finish()?;
+        r.writer.clear();
+        r.leave()?;
+        assert_eq!(r.writer, b"");
+        Ok(())
+    }
+
+    #[test]
+    fn leave() -> io::Result<()> {
+        let mut r = Renderer::new(vec![]);
+        r.reset()?
+            .render("trans rights".into_element())?
+            .render("enby rights".into_element())?
+            .finish()?;
+        r.writer.clear();
+        r.leave()?;
+        r.clear()?;
+        assert_eq!(r.writer, b"\n\r\r\x1b[J\x1b[?25h");
+        Ok(())
+    }
+
+    #[test]
+    fn leave_with_cursor() -> io::Result<()> {
+        let mut r = Renderer::new(vec![]);
+        r.reset()?
+            .render(("trans rights".into_element(), Cursor))?
+            .render("enby rights".into_element())?
+            .finish()?;
+        r.writer.clear();
+        r.leave()?;
+        r.clear()?;
+        assert_eq!(r.writer, b"\x1b[1B\n\r\r\x1b[J\x1b[?25h");
+        Ok(())
+    }
 }
