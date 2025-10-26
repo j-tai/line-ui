@@ -12,6 +12,7 @@ keywords = ["curses", "tui", "terminal"]
 categories = ["command-line-interface"]
 
 [dependencies]
+either = { version = "1.15.0", optional = true }
 serde = { version = "1.0.228", features = ["derive"], optional = true }
 termion = "4.0.5"
 unicode-width = { version = "0.2.1", optional = true }
@@ -20,3 +21,4 @@ unicode-width = { version = "0.2.1", optional = true }
 default = ["unicode"]
 serde = ["dep:serde"]
 unicode = ["dep:unicode-width"]
+either = ["dep:either"]

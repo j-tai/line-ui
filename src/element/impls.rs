@@ -89,6 +89,17 @@ impl_element_for_tuple!(A B C D E F G H, 0 1 2 3 4 5 6 7);
 impl_element_for_tuple!(A B C D E F G H I, 0 1 2 3 4 5 6 7 8);
 impl_element_for_tuple!(A B C D E F G H I J, 0 1 2 3 4 5 6 7 8 9);
 
+#[cfg(feature = "either")]
+impl<L: Element, R: Element> Element for either::Either<L, R> {
+    fn width(&self) -> usize {
+        either::for_both!(self, inner => inner.width())
+    }
+
+    fn render(&self) -> impl DoubleEndedIterator<Item = RenderChunk<'_>> {
+        self.as_ref().map_either(L::render, R::render)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::element::Gap;
@@ -104,5 +115,8 @@ mod tests {
         is_element::<[Gap; 42]>();
         is_element::<[&[Gap]; 4]>();
         is_element::<((), (), (), (), (), (), (), Gap, (), ())>();
+
+        #[cfg(feature = "either")]
+        is_element::<either::Either<Gap, (Gap, Gap)>>();
     }
 }
