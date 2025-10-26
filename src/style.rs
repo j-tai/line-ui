@@ -2,25 +2,36 @@
  * Copyright (c) 2025 Jasmine Tai. All rights reserved.
  */
 
+mod color;
+
 use std::fmt;
 use std::ops::{Add, AddAssign};
 
-use termion::color::{AnsiValue, Bg, Fg};
+use termion::color::{AnsiValue, Bg, Fg, Reset, Rgb};
+
+pub use color::Color;
 
 /// A text style, encompassing the color and other style options.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[non_exhaustive]
 pub struct Style {
     /// The foreground color.
-    pub foreground: Option<u8>,
+    pub foreground: Option<Color>,
     /// The background color.
-    pub background: Option<u8>,
+    pub background: Option<Color>,
     /// Whether the text should be bold.
     pub bold: Option<bool>,
     /// Whether the text should be italicized.
     pub italic: Option<bool>,
+    /// Whether the text should be underlined.
+    pub underline: Option<bool>,
+    /// Whether the text should be blinking (not widely supported).
+    pub blink: Option<bool>,
     /// Whether the text should have its colors inverted.
     pub invert: Option<bool>,
+    /// Whether the text should be crossed out (not widely supported).
+    pub strikethrough: Option<bool>,
 }
 
 impl Style {
@@ -30,7 +41,10 @@ impl Style {
         background: None,
         bold: None,
         italic: None,
+        underline: None,
+        blink: None,
         invert: None,
+        strikethrough: None,
     };
 
     /// Bold text.
@@ -45,24 +59,42 @@ impl Style {
         ..Style::EMPTY
     };
 
+    /// Underlined text.
+    pub const UNDERLINE: Style = Style {
+        underline: Some(true),
+        ..Style::EMPTY
+    };
+
+    /// Blinking text (not widely supported).
+    pub const BLINK: Style = Style {
+        blink: Some(true),
+        ..Style::EMPTY
+    };
+
     /// Inverted colors.
     pub const INVERT: Style = Style {
         invert: Some(true),
         ..Style::EMPTY
     };
 
+    /// Crossed-out text (not widely supported).
+    pub const STRIKETHROUGH: Style = Style {
+        strikethrough: Some(true),
+        ..Style::EMPTY
+    };
+
     /// Creates a style with only the foreground specified.
-    pub fn fg(value: u8) -> Style {
+    pub fn fg(color: impl Into<Color>) -> Style {
         Style {
-            foreground: Some(value),
+            foreground: Some(color.into()),
             ..Style::EMPTY
         }
     }
 
     /// Creates a style with only the background specified.
-    pub fn bg(value: u8) -> Style {
+    pub fn bg(color: impl Into<Color>) -> Style {
         Style {
-            background: Some(value),
+            background: Some(color.into()),
             ..Style::EMPTY
         }
     }
@@ -79,7 +111,10 @@ impl Style {
             background: self.background.or(other.background),
             bold: self.bold.or(other.bold),
             italic: self.italic.or(other.italic),
+            underline: self.underline.or(other.underline),
+            blink: self.blink.or(other.blink),
             invert: self.invert.or(other.invert),
+            strikethrough: self.strikethrough.or(other.strikethrough),
         }
     }
 }
@@ -100,17 +135,25 @@ impl Add for Style {
 
 impl AddAssign for Style {
     fn add_assign(&mut self, rhs: Self) {
-        *self = *self + rhs;
+        *self = self.with(rhs);
     }
 }
 
 impl fmt::Display for Style {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(foreground) = self.foreground {
-            Fg(AnsiValue(foreground)).fmt(f)?;
+            match foreground {
+                Color::Default => Fg(Reset).fmt(f),
+                Color::Ansi(value) => Fg(AnsiValue(value)).fmt(f),
+                Color::Rgb(r, g, b) => Fg(Rgb(r, g, b)).fmt(f),
+            }?;
         }
         if let Some(background) = self.background {
-            Bg(AnsiValue(background)).fmt(f)?;
+            match background {
+                Color::Default => Bg(Reset).fmt(f),
+                Color::Ansi(value) => Bg(AnsiValue(value)).fmt(f),
+                Color::Rgb(r, g, b) => Bg(Rgb(r, g, b)).fmt(f),
+            }?;
         }
         if self.bold == Some(true) {
             termion::style::Bold.fmt(f)?;
@@ -118,8 +161,17 @@ impl fmt::Display for Style {
         if self.italic == Some(true) {
             termion::style::Italic.fmt(f)?;
         }
+        if self.underline == Some(true) {
+            termion::style::Underline.fmt(f)?;
+        }
+        if self.blink == Some(true) {
+            termion::style::Blink.fmt(f)?;
+        }
         if self.invert == Some(true) {
             termion::style::Invert.fmt(f)?;
+        }
+        if self.strikethrough == Some(true) {
+            termion::style::CrossedOut.fmt(f)?;
         }
         Ok(())
     }
@@ -132,13 +184,13 @@ mod tests {
     use super::*;
 
     const STYLE_1: Style = Style {
-        foreground: Some(1),
+        foreground: Some(Color::Ansi(1)),
         bold: Some(true),
         ..Style::EMPTY
     };
 
     const STYLE_2: Style = Style {
-        foreground: Some(2),
+        foreground: Some(Color::Ansi(2)),
         italic: Some(true),
         ..Style::EMPTY
     };
@@ -149,11 +201,10 @@ mod tests {
         assert_eq!(
             style,
             Style {
-                foreground: Some(2),
-                background: None,
+                foreground: Some(2.into()),
                 bold: Some(true),
                 italic: Some(true),
-                invert: None
+                ..Style::EMPTY
             },
         );
     }
@@ -164,11 +215,10 @@ mod tests {
         assert_eq!(
             style,
             Style {
-                foreground: Some(1),
-                background: None,
+                foreground: Some(1.into()),
                 bold: Some(true),
                 italic: Some(true),
-                invert: None
+                ..Style::EMPTY
             },
         );
     }
@@ -192,14 +242,32 @@ mod tests {
             &mut output,
             "{}",
             Style {
-                foreground: Some(1),
-                background: Some(2),
+                foreground: Some(1.into()),
+                background: Some(2.into()),
                 bold: Some(true),
                 italic: Some(true),
+                underline: Some(true),
+                blink: Some(true),
                 invert: Some(true),
+                strikethrough: Some(true),
             },
         )
         .unwrap();
-        assert_eq!(output, b"\x1b[38;5;1m\x1b[48;5;2m\x1b[1m\x1b[3m\x1b[7m");
+        assert_eq!(
+            output,
+            b"\x1b[38;5;1m\x1b[48;5;2m\x1b[1m\x1b[3m\x1b[4m\x1b[5m\x1b[7m\x1b[9m",
+        );
+    }
+
+    #[test]
+    fn print_default_and_rgb() {
+        let mut output = vec![];
+        write!(
+            &mut output,
+            "{}",
+            Style::fg((1, 2, 3)) + Style::bg(Color::Default),
+        )
+        .unwrap();
+        assert_eq!(output, b"\x1b[38;2;1;2;3m\x1b[49m");
     }
 }

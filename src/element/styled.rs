@@ -34,22 +34,23 @@ impl<E: Element> Element for Styled<E> {
 
 #[cfg(test)]
 mod tests {
+    use crate::Color;
     use crate::element::Text;
 
     use super::*;
 
     const STYLE_1: Style = Style {
-        foreground: Some(42),
+        foreground: Some(Color::Ansi(42)),
         ..Style::EMPTY
     };
 
     const STYLE_2: Style = Style {
-        foreground: Some(96),
+        foreground: Some(Color::Ansi(96)),
         ..Style::EMPTY
     };
 
     const STYLE_3: Style = Style {
-        background: Some(1),
+        background: Some(Color::Ansi(1)),
         ..Style::EMPTY
     };
 
@@ -76,8 +77,8 @@ mod tests {
             [RenderChunk::new(
                 "Hello, world!",
                 Style {
-                    foreground: Some(96),
-                    background: Some(1),
+                    foreground: Some(96.into()),
+                    background: Some(1.into()),
                     ..Style::EMPTY
                 },
             )],
