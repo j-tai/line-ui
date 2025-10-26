@@ -12,6 +12,29 @@ use termion::color::{AnsiValue, Bg, Fg, Reset, Rgb};
 pub use color::Color;
 
 /// A text style, encompassing the color and other style options.
+///
+/// Each field of this struct is an [`Option`]. When the value is [`None`], then
+/// the particular field is *unspecified*. By default, this is the same as
+/// setting it to <code>[Some]\([Default::default]\())</code>. However, two
+/// style can be *merged* with either [`Style::with`] (or the `+` operator) or
+/// [`Style::or`]. This allows another style to override certain fields only if
+/// they are unspecified.
+///
+/// # Example
+///
+/// ```
+/// use line_ui::Style;
+///
+/// let style1 = Style::fg(1);
+/// let style2 = Style::fg(2) + Style::BOLD;
+///
+/// assert_eq!(style1 + style2, style2);
+/// assert_eq!(style1.with(style2), style2); // `with` is equivalent to `+`
+///
+/// assert_eq!(style2 + style1, Style::fg(1) + Style::BOLD);
+/// assert_eq!(style1.or(style2), Style::fg(1) + Style::BOLD);
+/// // `or` is equivalent to `+` with operands flipped
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[non_exhaustive]
