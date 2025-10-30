@@ -131,7 +131,7 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn render_player(player: Option<Player>) -> impl Element {
+fn render_player(player: Option<Player>) -> impl Element<'static> {
     match player {
         None => "-".with_style(Style::fg(245)),
         Some(Player::X) => "X".with_style(Style::BOLD + Style::fg(33)),

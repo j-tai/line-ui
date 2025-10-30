@@ -17,7 +17,7 @@ pub struct FixedWidth<E, T = ()> {
     truncation: T,
 }
 
-impl<E: Element> FixedWidth<E, ()> {
+impl<'s, E: Element<'s>> FixedWidth<E, ()> {
     /// Creates a new [`FixedWidth`] with the specified width and content.
     pub fn new(width: usize, content: E) -> Self {
         FixedWidth {
@@ -30,7 +30,7 @@ impl<E: Element> FixedWidth<E, ()> {
     }
 }
 
-impl<E: Element, T: Element> FixedWidth<E, T> {
+impl<'s, E: Element<'s>, T: Element<'s>> FixedWidth<E, T> {
     /// Changes the side on which the content is truncated.
     ///
     /// This option only takes effect if the content is wider than the width.
@@ -53,7 +53,7 @@ impl<E: Element, T: Element> FixedWidth<E, T> {
     /// When this happens, this element is displayed on the side that is
     /// truncated. This element's width must not exceed the width of the
     /// `FixedWidth`.
-    pub fn truncated_with<U: Element>(self, truncation: U) -> FixedWidth<E, U> {
+    pub fn truncated_with<U: Element<'s>>(self, truncation: U) -> FixedWidth<E, U> {
         FixedWidth {
             width: self.width,
             truncate: self.truncate,
@@ -63,8 +63,8 @@ impl<E: Element, T: Element> FixedWidth<E, T> {
         }
     }
 
-    fn render_impl<'s>(
-        &'s self,
+    fn render_impl(
+        &self,
         content: impl DoubleEndedIterator<Item = RenderChunk<'s>>,
         truncate: impl for<'t> Fn(RenderChunk<'t>, usize) -> RenderChunk<'t>,
     ) -> (Vec<RenderChunk<'s>>, Gap) {
@@ -101,12 +101,16 @@ impl<E: Element, T: Element> FixedWidth<E, T> {
     }
 }
 
-impl<E: Element, T: Element> Element for FixedWidth<E, T> {
+impl<'s, E, T> Element<'s> for FixedWidth<E, T>
+where
+    E: Element<'s>,
+    T: Element<'s>,
+{
     fn width(&self) -> usize {
         self.width
     }
 
-    fn render(&self) -> impl DoubleEndedIterator<Item = RenderChunk<'_>> {
+    fn render(&self) -> impl DoubleEndedIterator<Item = RenderChunk<'s>> {
         let (result, gap) = match self.truncate {
             Direction::Left => {
                 let (mut result, gap) =
@@ -120,12 +124,12 @@ impl<E: Element, T: Element> Element for FixedWidth<E, T> {
 
         match self.pad {
             Direction::Left => {
-                for chunk in gap.into_render() {
+                for chunk in gap.render() {
                     result.push_front(chunk);
                 }
             }
             Direction::Right => {
-                for chunk in gap.into_render() {
+                for chunk in gap.render() {
                     result.push_back(chunk);
                 }
             }

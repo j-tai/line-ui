@@ -19,12 +19,12 @@ impl<E> Styled<E> {
     }
 }
 
-impl<E: Element> Element for Styled<E> {
+impl<'s, E: Element<'s>> Element<'s> for Styled<E> {
     fn width(&self) -> usize {
         self.inner.width()
     }
 
-    fn render(&self) -> impl DoubleEndedIterator<Item = RenderChunk<'_>> {
+    fn render(&self) -> impl DoubleEndedIterator<Item = RenderChunk<'s>> {
         self.inner.render().map(|mut item| {
             item.style = item.style.or(self.style);
             item

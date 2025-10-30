@@ -6,9 +6,9 @@ use crate::element::{Element, FixedWidth, Styled, Text};
 use crate::style::Style;
 
 /// A type that can be converted into an element.
-pub trait IntoElement: Sized {
+pub trait IntoElement<'s>: Sized {
     /// The element type to be converted into.
-    type ElementType: Element;
+    type ElementType: Element<'s>;
 
     /// Converts this type into an [`Element`].
     fn into_element(self) -> Self::ElementType;
@@ -24,7 +24,7 @@ pub trait IntoElement: Sized {
     }
 }
 
-impl<E: Element> IntoElement for E {
+impl<'s, E: Element<'s>> IntoElement<'s> for E {
     type ElementType = Self;
 
     fn into_element(self) -> Self::ElementType {
@@ -32,10 +32,28 @@ impl<E: Element> IntoElement for E {
     }
 }
 
-impl<'s> IntoElement for &'s str {
+impl<'s> IntoElement<'s> for &'s str {
     type ElementType = Text<'s>;
 
     fn into_element(self) -> Self::ElementType {
         Text::from(self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Renderer;
+
+    use super::*;
+
+    #[test]
+    fn non_static_lifetime() {
+        let string = "foo".to_owned();
+        let not_static = string[..].into_element();
+
+        let mut r = Renderer::new(vec![]);
+        let _ = r.render(&not_static);
+        let _ = r.render(not_static.fixed_width(42));
+        let _ = r.finish();
     }
 }

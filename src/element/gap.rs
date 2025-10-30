@@ -12,21 +12,12 @@ use crate::render::RenderChunk;
 #[derive(Debug, Clone, Copy)]
 pub struct Gap(pub usize);
 
-impl Gap {
-    pub(crate) fn into_render<'s>(self) -> impl DoubleEndedIterator<Item = RenderChunk<'s>> {
-        GapIter {
-            size: self.0,
-            phantom: PhantomData,
-        }
-    }
-}
-
-impl Element for Gap {
+impl<'s> Element<'s> for Gap {
     fn width(&self) -> usize {
         self.0
     }
 
-    fn render(&self) -> impl DoubleEndedIterator<Item = RenderChunk<'_>> {
+    fn render(&self) -> impl DoubleEndedIterator<Item = RenderChunk<'s>> {
         GapIter {
             size: self.0,
             phantom: PhantomData,
@@ -39,8 +30,6 @@ struct GapIter<'s> {
     phantom: PhantomData<&'s ()>,
 }
 
-// I could just set Item = StyledStr<'static>, but the compiler doesn't like
-// that for some reason
 impl<'s> Iterator for GapIter<'s> {
     type Item = RenderChunk<'s>;
 

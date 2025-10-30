@@ -22,10 +22,25 @@ pub use styled::*;
 pub use text::*;
 
 /// A particular widget that can be rendered to the TUI.
-pub trait Element {
+///
+/// # Lifetime parameter
+///
+/// The `'s` lifetime parameter indicates the lifetime of any values (e.g.,
+/// strings) borrowed by the `Element`. For example:
+///
+/// ```
+/// use line_ui::element::Text;
+///
+/// let my_string = String::from("hello");
+/// let my_element = Text::new(&my_string);
+/// ```
+///
+/// Here, `my_element` implements `Element<'s>`, where `'s` is the lifetime
+/// of `my_string`.
+pub trait Element<'s> {
     /// The width of the element, in columns.
     fn width(&self) -> usize;
 
     /// Renders the element into a sequence of chunks.
-    fn render(&self) -> impl DoubleEndedIterator<Item = RenderChunk<'_>>;
+    fn render(&self) -> impl DoubleEndedIterator<Item = RenderChunk<'s>>;
 }

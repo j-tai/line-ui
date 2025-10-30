@@ -9,12 +9,12 @@ use crate::render::RenderChunk;
 #[derive(Debug, Clone, Copy)]
 pub struct Cursor;
 
-impl Element for Cursor {
+impl<'s> Element<'s> for Cursor {
     fn width(&self) -> usize {
         0
     }
 
-    fn render(&self) -> impl DoubleEndedIterator<Item = RenderChunk<'_>> {
+    fn render(&self) -> impl DoubleEndedIterator<Item = RenderChunk<'s>> {
         std::iter::once(RenderChunk::CURSOR)
     }
 }

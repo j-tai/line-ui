@@ -28,12 +28,12 @@ impl<'s> From<&'s str> for Text<'s> {
     }
 }
 
-impl Element for Text<'_> {
+impl<'s> Element<'s> for Text<'s> {
     fn width(&self) -> usize {
         self.width
     }
 
-    fn render(&self) -> impl DoubleEndedIterator<Item = RenderChunk<'_>> {
+    fn render(&self) -> impl DoubleEndedIterator<Item = RenderChunk<'s>> {
         std::iter::once(RenderChunk::with_known_width(
             self.value,
             self.width,

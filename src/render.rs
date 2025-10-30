@@ -82,7 +82,7 @@ impl<W: Write> Renderer<W> {
 
     /// Resets the cursor position, allowing rendering to start over.
     pub fn reset(&mut self) -> io::Result<&mut Self> {
-        assert!(!self.is_dirty, "finalize() must be called after rendering");
+        assert!(!self.is_dirty, "finish() must be called after rendering");
         // Reset the cursor to the top-left.
         let current_cursor_line = match self.desired_cursor {
             // If there's a desired cursor position, the cursor is there.
@@ -104,13 +104,13 @@ impl<W: Write> Renderer<W> {
     /// Note that this method is automatically called when the `Renderer` is
     /// [dropped](Drop).
     pub fn clear(&mut self) -> io::Result<()> {
-        assert!(!self.is_dirty, "finalize() must be called after rendering");
+        assert!(!self.is_dirty, "finish() must be called after rendering");
         self.reset()?;
         write!(self.writer, "{}{}", clear::AfterCursor, cursor::Show)
     }
 
     /// Renders a line.
-    pub fn render<E: Element>(&mut self, line: E) -> io::Result<&mut Self> {
+    pub fn render<'s, E: Element<'s>>(&mut self, line: E) -> io::Result<&mut Self> {
         self.is_dirty = true;
         // If this isn't the first line, then move to the next line.
         if self.lines_rendered != 0 {
@@ -159,7 +159,7 @@ impl<W: Write> Renderer<W> {
     /// without clearing the currently-rendered text. This should be called
     /// after [`finish`](Self::finish).
     pub fn leave(&mut self) -> io::Result<()> {
-        assert!(!self.is_dirty, "finalize() must be called after rendering");
+        assert!(!self.is_dirty, "finish() must be called after rendering");
         if self.lines_rendered == 0 {
             return Ok(());
         }
