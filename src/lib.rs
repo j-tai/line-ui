@@ -35,7 +35,7 @@ mod tests {
         r.reset()?
             .render((
                 "one".into_element(),
-                "two".with_style(Style::fg(4).with(Style::bg(5))),
+                "two".styled(Style::fg(4).with(Style::bg(5))),
                 "three".into_element(),
             ))?
             .finish()?;
@@ -53,7 +53,7 @@ mod tests {
             .render(
                 "test"
                     .fixed_width(10)
-                    .with_style(Style::fg(42).with(Style::bg(43))),
+                    .styled(Style::fg(42).with(Style::bg(43))),
             )?
             .finish()?;
         assert_eq!(

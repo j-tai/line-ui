@@ -19,7 +19,7 @@ pub trait IntoElement<'s>: Sized {
     }
 
     /// Convenience function to wrap this element in a [`Styled`].
-    fn with_style(self, style: Style) -> Styled<Self::ElementType> {
+    fn styled(self, style: Style) -> Styled<Self::ElementType> {
         Styled::new(style, self.into_element())
     }
 

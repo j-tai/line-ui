@@ -133,8 +133,8 @@ fn main() -> io::Result<()> {
 
 fn render_player(player: Option<Player>) -> impl Element<'static> {
     match player {
-        None => "-".with_style(Style::fg(245)),
-        Some(Player::X) => "X".with_style(Style::BOLD + Style::fg(33)),
-        Some(Player::O) => "O".with_style(Style::BOLD + Style::fg(203)),
+        None => "-".styled(Style::fg(245)),
+        Some(Player::X) => "X".styled(Style::BOLD + Style::fg(33)),
+        Some(Player::O) => "O".styled(Style::BOLD + Style::fg(203)),
     }
 }

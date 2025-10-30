@@ -24,7 +24,7 @@ fn main() -> std::io::Result<()> {
                 (name.into_element(), Cursor, Gap(1))
                     .fixed_width(20)
                     .truncated(Direction::Left)
-                    .with_style(Style::bg(240)),
+                    .styled(Style::bg(240)),
             ))?
             .finish()?;
 
