@@ -178,12 +178,17 @@ impl<W: Write> Renderer<W> {
 
 impl<W: Write> Drop for Renderer<W> {
     fn drop(&mut self) {
-        let _ = self.clear();
+        if !std::thread::panicking() {
+            // If dropping due to panic, don't bother cleaning up
+            let _ = self.clear();
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::panic::AssertUnwindSafe;
+
     use crate::element::{Cursor, IntoElement};
 
     use super::*;
@@ -332,5 +337,17 @@ mod tests {
         r.clear()?;
         assert_eq!(r.writer, b"\x1b[1B\n\r\r\x1b[J\x1b[?25h");
         Ok(())
+    }
+
+    #[test]
+    fn no_drop_during_panic() {
+        let mut output = vec![];
+        let result = std::panic::catch_unwind(AssertUnwindSafe(|| {
+            let mut r = Renderer::new(&mut output);
+            let _ = r.render("hello".into_element());
+            panic!();
+        }));
+        result.unwrap_err();
+        assert_eq!(output, b"hello\x1b[m\x1b[K");
     }
 }

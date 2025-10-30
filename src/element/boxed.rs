@@ -19,7 +19,7 @@ use crate::render::RenderChunk;
 ///     if value {
 ///         "some fancy text"
 ///             .fixed_width(20)
-///             .with_style(Style::fg(Color::RED) + Style::INVERT)
+///             .styled(Style::fg(Color::RED) + Style::INVERT)
 ///             .boxed()
 ///     } else {
 ///         "just some text".boxed()

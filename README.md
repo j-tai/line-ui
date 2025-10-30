@@ -17,7 +17,7 @@ fn main() -> std::io::Result<()> {
     r.reset()?
         .render((
             "left".into_element(),
-            "fixed width".fixed_width(20).with_style(Style::INVERT),
+            "fixed width".fixed_width(20).styled(Style::INVERT),
             "right".into_element(),
         ))?
         .render("Press any key to continue!".into_element())?

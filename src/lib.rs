@@ -30,7 +30,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn with_style() -> io::Result<()> {
+    fn styled() -> io::Result<()> {
         let mut r = Renderer::new(vec![]);
         r.reset()?
             .render((
@@ -47,7 +47,7 @@ mod tests {
     }
 
     #[test]
-    fn with_styled_fixed_width() -> io::Result<()> {
+    fn styledd_fixed_width() -> io::Result<()> {
         let mut r = Renderer::new(vec![]);
         r.reset()?
             .render(
