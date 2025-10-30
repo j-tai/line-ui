@@ -94,9 +94,7 @@ impl<'s, E: Element<'s>, T: Element<'s>> FixedWidth<E, T> {
             }
         }
 
-        for item in self.truncation.render() {
-            result.push(item);
-        }
+        result.extend(self.truncation.render());
         (result, Gap(self.width - accumulated_width))
     }
 }
@@ -128,11 +126,7 @@ where
                     result.push_front(chunk);
                 }
             }
-            Direction::Right => {
-                for chunk in gap.render() {
-                    result.push_back(chunk);
-                }
-            }
+            Direction::Right => result.extend(gap.render()),
         }
 
         result.into_iter()

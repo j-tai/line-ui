@@ -2,7 +2,7 @@
  * Copyright (c) 2025 Jasmine Tai. All rights reserved.
  */
 
-use crate::element::{Element, FixedWidth, Styled, Text};
+use crate::element::{BoxElement, Element, FixedWidth, Styled, Text};
 use crate::style::Style;
 
 /// A type that can be converted into an element.
@@ -21,6 +21,11 @@ pub trait IntoElement<'s>: Sized {
     /// Convenience function to wrap this element in a [`Styled`].
     fn with_style(self, style: Style) -> Styled<Self::ElementType> {
         Styled::new(style, self.into_element())
+    }
+
+    /// Convenience function to box this element.
+    fn boxed(self) -> BoxElement<'s> {
+        BoxElement::new(self.into_element())
     }
 }
 
