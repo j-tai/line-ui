@@ -33,6 +33,26 @@ pub enum Color {
     Rgb(u8, u8, u8),
 }
 
+#[allow(missing_docs)]
+impl Color {
+    pub const BLACK: Color = Color::Ansi(0);
+    pub const RED: Color = Color::Ansi(1);
+    pub const GREEN: Color = Color::Ansi(2);
+    pub const YELLOW: Color = Color::Ansi(3);
+    pub const BLUE: Color = Color::Ansi(4);
+    pub const MAGENTA: Color = Color::Ansi(5);
+    pub const CYAN: Color = Color::Ansi(6);
+    pub const WHITE: Color = Color::Ansi(7);
+    pub const LIGHT_BLACK: Color = Color::Ansi(8);
+    pub const LIGHT_RED: Color = Color::Ansi(9);
+    pub const LIGHT_GREEN: Color = Color::Ansi(10);
+    pub const LIGHT_YELLOW: Color = Color::Ansi(11);
+    pub const LIGHT_BLUE: Color = Color::Ansi(12);
+    pub const LIGHT_MAGENTA: Color = Color::Ansi(13);
+    pub const LIGHT_CYAN: Color = Color::Ansi(14);
+    pub const LIGHT_WHITE: Color = Color::Ansi(15);
+}
+
 impl From<u8> for Color {
     fn from(value: u8) -> Self {
         Color::Ansi(value)
